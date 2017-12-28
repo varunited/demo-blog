@@ -4,6 +4,8 @@
   :license      {:name "Eclipse Public License"
                  :url "http://www.eclipse.org/legal/epl-v10.html"}
   :dependencies [[org.clojure/clojure "1.9.0"]
-                 [ring/ring-core "1.6.3"]
-                 [ring/ring-jetty-adapter "1.6.3"]]
-  :main         demo-blog.core)
+                 [ring/ring "1.6.3"]
+                 [compojure "1.6.0"]]
+  :main         demo-blog.web
+  :profiles     {:dev
+                 {:main demo-blog.web/-dev-main}})
