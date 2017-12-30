@@ -1,15 +1,14 @@
-DROP TABLE IF EXISTS `articles`;
+DROP TABLE IF EXISTS `stories`;
 
 
-CREATE TABLE IF NOT EXISTS `articles` (
-  `user_id`      binary(16) NOT NULL,
-  `article_id`   binary(16) NOT NULL,
-  `article_json` text       NOT NULL,
-  `version`      int        DEFAULT 1,
+CREATE TABLE IF NOT EXISTS `stories` (
+  `owner_id`     binary(16) NOT NULL,
+  `story_id`     binary(16) NOT NULL,
+  `story_json`   text       NOT NULL,
   `created_at`   datetime   NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `is_deleted`   boolean    DEFAULT false,
-  PRIMARY KEY (`article_id`)
+  PRIMARY KEY (`story_id`)
 ) DEFAULT CHARSET=utf8mb4;
 
-CREATE INDEX `article_owner`
-ON `articles` (`user_id`);
+CREATE INDEX `story_owner`
+ON `stories` (`owner_id`);
