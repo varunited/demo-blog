@@ -26,3 +26,16 @@
                    :story-id   story-id
                    :story-json (util/json-str new-story)}]
     (sql-save-story db-spec story-map)))
+
+
+(a/defsql sql-delete-personal-data
+  "UPDATE stories
+      SET is_deleted = true, story_json = NULL
+    WHERE owner_id = unhex($owner-id)
+      AND story_id = unhex($story-id)")
+
+
+(defn  delete-story
+  [owner-id story-id]
+  (sql-delete-personal-data db-spec {:owner-id owner-id
+                                     :story-id story-id}))

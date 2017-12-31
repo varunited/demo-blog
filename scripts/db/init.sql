@@ -4,7 +4,7 @@ DROP TABLE IF EXISTS `stories`;
 CREATE TABLE IF NOT EXISTS `stories` (
   `owner_id`     binary(16) NOT NULL,
   `story_id`     binary(16) NOT NULL,
-  `story_json`   text       NOT NULL,
+  `story_json`   text,
   `created_at`   datetime   NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `is_deleted`   boolean    DEFAULT false,
   PRIMARY KEY (`story_id`)

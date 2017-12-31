@@ -35,14 +35,22 @@
         (err-handler service-resp)))))
 
 
-(defn delete-story [request]
-    {:status 200
-     :body "Hello, World 123!"
-     :headers {}})
+(defn delete-story
+  [request]
+  (let [owner-id (-> request
+                   (get-in [:params :owner-id])
+                   util/clean-uuid)
+        story-id (-> request
+                   (get-in [:params :story-id])
+                   util/clean-uuid)]
+    (let [service-resp (service/delete-story owner-id story-id)]
+      (if (true? (:deleted? service-resp))
+        (res/json-response {:status 201 :data service-resp})
+        (err-handler service-resp)))))
 
 
 (defroutes app
   (GET "/" [] home)
   (POST "/user/:owner-id/new" [] save-story)
-  (DELETE "/user/:user-id/delete/:story-id" [] delete-story)
+  (DELETE "/user/:owner-id/delete/:story-id" [] delete-story)
   (not-found "Sorry, page not found"))
