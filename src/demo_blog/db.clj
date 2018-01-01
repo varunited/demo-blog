@@ -2,7 +2,10 @@
   (:require
     [demo-blog.util :as util]
     [asphalt.core   :as a]
-    [clj-dbcp.core  :as dbcp]))
+    [asphalt.type   :as atype]
+    [clj-dbcp.core  :as dbcp])
+  (:import
+    [com.fasterxml.jackson.core JsonParseException]))
 
 (def db-spec
   {:datasource
@@ -11,6 +14,29 @@
       :jdbc-url  "jdbc:mysql://localhost:3306/demo_blog?useSSL=false"
       :user      "demo_blog"
       :password  "password"})})
+
+
+(defn row->story
+  [[story-id story-json]]
+  (try
+    {:story-id    (util/clean-uuid story-id)
+     :story-json  (util/parse-json-str story-json)}
+    (catch JsonParseException e
+      (throw (ex-info "Error deserializing JSON data from database" {:story-id story-id
+                                                                     :success? false})))))
+
+
+(a/defsql sql-list-stories-by-id
+  "SELECT hex(story_id), story_json
+     FROM stories
+    WHERE owner_id = unhex($owner-id)
+      AND is_deleted = false"
+  {:result-set-worker (partial a/fetch-rows {:row-maker (comp row->story atype/read-row)})})
+
+
+(defn list-stories-by-id
+  [owner-id]
+  (sql-list-stories-by-id db-spec {:owner-id owner-id}))
 
 
 (a/defsql sql-save-story

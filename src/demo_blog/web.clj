@@ -14,8 +14,12 @@
                    (error/tag-lookup-middleware error/default-tag-lookup)))
 
 
-(defn home [request]
-  (res/status {:body "Hello, World foo-bar!"}))
+(defn list-stories
+  [request]
+  (let [owner-id (-> request
+                   (get-in [:params :owner-id])
+                   util/clean-uuid)]
+    (res/json-response {:status 201 :data (service/list-stories owner-id)})))
 
 
 (defn save-story
@@ -44,7 +48,7 @@
 
 
 (defroutes app
-  (GET "/" [] home)
-  (POST "/user/:owner-id/new" [] save-story)
-  (DELETE "/user/:owner-id/delete/:story-id" [] delete-story)
+  (GET "/owner/:owner-id" [] list-stories)
+  (POST "/owner/:owner-id/new" [] save-story)
+  (DELETE "/owner/:owner-id/delete/:story-id" [] delete-story)
   (not-found "Sorry, page not found"))

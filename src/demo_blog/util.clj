@@ -10,6 +10,12 @@
   (json/generate-string data))
 
 
+(defn parse-json-str
+  "Convert a valid JSON string to a Clojure map"
+  [data]
+  (json/parse-string data))
+
+
 (defn clean-uuid
   "Generate or convert UUID into a sanitized, lower-case form."
   (^String []

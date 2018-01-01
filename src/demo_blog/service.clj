@@ -6,16 +6,15 @@
     [java.sql SQLException]))
 
 
-(defn delete-story
-  [owner-id story-id]
-  (cond
-    (empty? owner-id) {:tag :bad-input :message "Invalid owner-id"}
-    (empty? story-id) {:tag :bad-input :message "Invalid story-id"}
-    :otherwise        (try
-                        (do (db/delete-story owner-id story-id)
-                            {:deleted? true})
-                         (catch SQLException e
-                           (throw (ex-info "Unable to delete new-story" {}))))))
+(defn list-stories
+  [owner-id]
+  (if (empty? owner-id)
+    {:tag :bad-input :message "Invalid owner-id"}
+    (try
+      (let [stories (db/list-stories-by-id owner-id)]
+        {:stories stories})
+      (catch SQLException e
+        (throw (ex-info "Unable to find stories" {}))))))
 
 
 (defn save-story
@@ -34,3 +33,15 @@
                                {:story-id story-id}))
                          (catch SQLException e
                            (throw (ex-info "Unable to save new story" {}))))))
+
+
+(defn delete-story
+  [owner-id story-id]
+  (cond
+    (empty? owner-id) {:tag :bad-input :message "Invalid owner-id"}
+    (empty? story-id) {:tag :bad-input :message "Invalid story-id"}
+    :otherwise        (try
+                        (do (db/delete-story owner-id story-id)
+                            {:deleted? true})
+                         (catch SQLException e
+                           (throw (ex-info "Unable to delete new-story" {}))))))
