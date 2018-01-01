@@ -35,7 +35,7 @@
       AND story_id = unhex($story-id)")
 
 
-(defn  delete-story
+(defn delete-story
   [owner-id story-id]
   (sql-delete-personal-data db-spec {:owner-id owner-id
                                      :story-id story-id}))

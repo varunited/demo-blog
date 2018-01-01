@@ -29,10 +29,7 @@
         new-story (model/map+>NewArticle {:heading   heading
                                           :content   content
                                           :image-url image-url})]
-    (let [service-resp (service/save-story owner-id new-story)]
-      (if (contains? service-resp :story-id)
-        (res/json-response {:status 201 :data service-resp})
-        (err-handler service-resp)))))
+    (res/json-response {:status 201 :data (service/save-story owner-id new-story)})))
 
 
 (defn delete-story
@@ -43,10 +40,7 @@
         story-id (-> request
                    (get-in [:params :story-id])
                    util/clean-uuid)]
-    (let [service-resp (service/delete-story owner-id story-id)]
-      (if (true? (:deleted? service-resp))
-        (res/json-response {:status 201 :data service-resp})
-        (err-handler service-resp)))))
+    (res/json-response {:status 200 :data (service/delete-story owner-id story-id)})))
 
 
 (defroutes app
