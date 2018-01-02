@@ -1,54 +1,108 @@
 (ns demo-blog.web
   (:require
-    [demo-blog.model   :as    model]
-    [demo-blog.service :as    service]
-    [demo-blog.util    :as    util]
-    [compojure.core    :refer [defroutes GET POST DELETE]]
-    [compojure.route   :refer [not-found]]
-    [ringlet.error     :as    error]
-    [ringlet.request   :as    req]
-    [ringlet.response  :as    res]))
+    [demo-blog.service  :as    service]
+    [demo-blog.util     :as    util]
+    [clojure.core.match :refer [match]]
+    [compojure.core     :refer [defroutes GET POST DELETE]]
+    [compojure.route    :refer [not-found]]
+    [ringlet.error      :as    error]
+    [ringlet.request    :as    req]
+    [ringlet.response   :as    res]))
+
+
+;; ---- Validations ----
+
+(defn content-type?
+  [request]
+  (get-in request [:headers "content-type"]))
 
 
 (def err-handler (-> (fn [_] (res/text-500 "Server error"))
                    (error/tag-lookup-middleware error/default-tag-lookup)))
 
 
+;; ---- List stories ----
+
+
+(defn valid-list-stories-input?
+  [owner-id]
+  (if (empty? owner-id)
+    {:tag :bad-input :message "Invalid owner-id"}
+    "valid-input"))
+
+
 (defn list-stories
-  [request]
-  (let [owner-id (-> request
-                   (get-in [:params :owner-id])
-                   util/clean-uuid)]
-    (res/json-response {:status 201 :data (service/list-stories owner-id)})))
+  [request owner-id]
+  (let [input (valid-list-stories-input? owner-id)]
+    (if (= input "valid-input")
+      (res/json-response {:status 200 :data (service/list-stories
+                                              (util/clean-uuid owner-id))})
+      (err-handler input))))
+
+
+;; ---- Save story ----
+
+
+(defn validate-new-story-map
+  [owner-id {:strs [heading
+                    content
+                    image-url]}]
+  (cond
+    (empty? owner-id)  {:tag :bad-input :message "Invalid owner-id asd"}
+    (empty? heading)   {:tag :bad-input :message "Invalid heading asd"}
+    (empty? content)   {:tag :bad-input :message "Invalid content asd"}
+    (empty? image-url) {:tag :bad-input :message "Invalid image-url asd"}
+    :otherwise         {:heading   heading
+                        :content   content
+                        :image-url image-url}))
 
 
 (defn save-story
-  [request]
-  (let [{:strs [heading
-                content
-                image-url]} (req/read-json-body request)
-        owner-id (-> request
-                   (get-in [:params :owner-id])
-                   util/clean-uuid)
-        new-story (model/map+>NewArticle {:heading   heading
-                                          :content   content
-                                          :image-url image-url})]
-    (res/json-response {:status 201 :data (service/save-story owner-id new-story)})))
+  [request owner-id]
+  (if (= (content-type? request) "application/json")
+    (let [payload (->> request
+                    req/read-json-body
+                    (validate-new-story-map owner-id))]
+      (match [payload]
+        [{:heading _
+          :content _
+          :image-url _}] (res/json-response {:status 201 :data (service/save-story
+                                                                 (util/clean-uuid owner-id) payload)})
+        :else          (err-handler payload)))
+    (err-handler {:tag :bad-input :message "Expected content-type: application/json"})))
+
+
+;; ---- Delete story ----
+
+
+(defn valid-delete-story-input?
+  [owner-id story-id]
+  (cond
+    (empty? owner-id) {:tag :bad-input :message "Invalid owner-id"}
+    (empty? story-id) {:tag :bad-input :message "Invalid story-id"}
+    :otherwise        "valid-input"))
 
 
 (defn delete-story
-  [request]
-  (let [owner-id (-> request
-                   (get-in [:params :owner-id])
-                   util/clean-uuid)
-        story-id (-> request
-                   (get-in [:params :story-id])
-                   util/clean-uuid)]
-    (res/json-response {:status 200 :data (service/delete-story owner-id story-id)})))
+  [request owner-id story-id]
+  (let [input (valid-delete-story-input? owner-id story-id)]
+    (if (= input "valid-input")
+      (res/json-response {:status 200 :data (service/delete-story
+                                              (util/clean-uuid owner-id) (util/clean-uuid story-id))})
+      (err-handler input))))
+
+
+;; ---- Routes ----
 
 
 (defroutes app
-  (GET "/owner/:owner-id" [] list-stories)
-  (POST "/owner/:owner-id/new" [] save-story)
-  (DELETE "/owner/:owner-id/delete/:story-id" [] delete-story)
+  (GET "/owner/:owner-id"
+    [owner-id :as request]          (list-stories request owner-id))
+
+  (POST "/owner/:owner-id/new"
+    [owner-id :as request]          (save-story request owner-id))
+
+  (DELETE "/owner/:owner-id/delete/:story-id"
+    [owner-id story-id :as request] (delete-story request owner-id story-id))
+
   (not-found "Sorry, page not found"))

@@ -16,6 +16,9 @@
       :password  "password"})})
 
 
+;; --- List stories ---
+
+
 (defn row->story
   [[story-id story-json]]
   (try
@@ -39,6 +42,9 @@
   (sql-list-stories-by-id db-spec {:owner-id owner-id}))
 
 
+;; ---- Save story ---
+
+
 (a/defsql sql-save-story
   "INSERT INTO stories
    (owner_id, story_id, story_json)
@@ -52,6 +58,9 @@
                    :story-id   story-id
                    :story-json (util/json-str new-story)}]
     (sql-save-story db-spec story-map)))
+
+
+;; --- Delete story ---
 
 
 (a/defsql sql-delete-personal-data
