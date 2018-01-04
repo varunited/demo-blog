@@ -2,7 +2,6 @@
   (:require
     [demo-blog.service  :as    service]
     [demo-blog.util     :as    util]
-    [clojure.core.match :refer [match]]
     [compojure.core     :refer [defroutes GET POST DELETE]]
     [compojure.route    :refer [not-found]]
     [ringlet.error      :as    error]
@@ -34,10 +33,10 @@
 (defn list-stories
   [request owner-id]
   (let [input (valid-list-stories-input? owner-id)]
-    (if (= input "valid-input")
+    (if (contains? input :tag)
+      (err-handler input)
       (res/json-response {:status 200 :data (service/list-stories
-                                              (util/clean-uuid owner-id))})
-      (err-handler input))))
+                                              (util/clean-uuid owner-id))}))))
 
 
 ;; ---- Save story ----
@@ -63,12 +62,10 @@
     (let [payload (->> request
                     req/read-json-body
                     (validate-new-story-map owner-id))]
-      (match [payload]
-        [{:heading _
-          :content _
-          :image-url _}] (res/json-response {:status 201 :data (service/save-story
-                                                                 (util/clean-uuid owner-id) payload)})
-        :else          (err-handler payload)))
+      (if (contains? payload :tag)
+        (err-handler payload)
+        (res/json-response {:status 201 :data (service/save-story
+                                                (util/clean-uuid owner-id) payload)})))
     (err-handler {:tag :bad-input :message "Expected content-type: application/json"})))
 
 
@@ -86,10 +83,10 @@
 (defn delete-story
   [request owner-id story-id]
   (let [input (valid-delete-story-input? owner-id story-id)]
-    (if (= input "valid-input")
+    (if (contains? input :tag)
+      (err-handler input)
       (res/json-response {:status 200 :data (service/delete-story
-                                              (util/clean-uuid owner-id) (util/clean-uuid story-id))})
-      (err-handler input))))
+                                              (util/clean-uuid owner-id) (util/clean-uuid story-id))}))))
 
 
 ;; ---- Routes ----

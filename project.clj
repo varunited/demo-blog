@@ -10,8 +10,7 @@
                  [asphalt   "0.6.2"]
                  [cheshire  "5.8.0"]
                  [mysql/mysql-connector-java "6.0.2"]
-                 [ringlet "0.1.0-SNAPSHOT"]
-                 [org.clojure/core.match "0.3.0-alpha5"]]
+                 [ringlet "0.1.0-SNAPSHOT"]]
   :main         demo-blog.init
   :profiles     {:dev
                  {:main demo-blog.init/-dev-main}})
