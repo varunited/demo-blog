@@ -45,15 +45,15 @@
 (defn validate-new-story-map
   [owner-id {:strs [heading
                     content
-                    image-url]}]
+                    email-id]}]
   (cond
-    (empty? owner-id)  {:tag :bad-input :message "Invalid owner-id asd"}
-    (empty? heading)   {:tag :bad-input :message "Invalid heading asd"}
-    (empty? content)   {:tag :bad-input :message "Invalid content asd"}
-    (empty? image-url) {:tag :bad-input :message "Invalid image-url asd"}
+    (empty? owner-id)  {:tag :bad-input :message "Empty owner-id"}
+    (empty? heading)   {:tag :bad-input :message "Empty heading"}
+    (empty? content)   {:tag :bad-input :message "Empty content"}
+    (empty? email-id)  {:tag :bad-input :message "Empty email-id"}
     :otherwise         {:heading   heading
                         :content   content
-                        :image-url image-url}))
+                        :email-id  email-id}))
 
 
 (defn save-story
@@ -64,8 +64,10 @@
                     (validate-new-story-map owner-id))]
       (if (contains? payload :tag)
         (err-handler payload)
-        (res/json-response {:status 201 :data (service/save-story
-                                                (util/clean-uuid owner-id) payload)})))
+        (let [service-response (service/save-story (util/clean-uuid owner-id) payload)]
+          (if (contains? service-response :tag)
+            (err-handler service-response)
+            (res/json-response {:status 201 :data service-response})))))
     (err-handler {:tag :bad-input :message "Expected content-type: application/json"})))
 
 

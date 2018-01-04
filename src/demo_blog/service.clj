@@ -6,6 +6,8 @@
     [java.sql SQLException]))
 
 
+;; --- List stories ----
+
 (defn list-stories
   [owner-id]
   (try
@@ -15,17 +17,27 @@
       (throw (ex-info "Unable to find stories" {})))))
 
 
+;; --- Save story ----
+
+
+(defn valid-email-id?
+  [email-id]
+  (re-matches #".+\@.+\..+" email-id))
+
+
 (defn save-story
-  [owner-id {:keys [heading
-                    content
-                    image-url]
-             :as new-story}]
-  (try
-    (let [story-id (util/clean-uuid)]
-      (do (db/save-story owner-id story-id new-story)
-          {:story-id story-id}))
-    (catch SQLException e
-      (throw (ex-info "Unable to save new story" {})))))
+  [owner-id {:keys [email-id] :as new-story}]
+  (if (not (valid-email-id? email-id))
+    {:tag :bad-input :message "Invalid email-id"}
+    (try
+      (let [story-id (util/clean-uuid)]
+        (do (db/save-story owner-id story-id new-story)
+            {:story-id story-id}))
+      (catch SQLException e
+        (throw (ex-info "Unable to save new story" {}))))))
+
+
+;; --- Delete story ----
 
 
 (defn delete-story
