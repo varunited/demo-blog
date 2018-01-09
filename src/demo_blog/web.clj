@@ -1,23 +1,27 @@
 (ns demo-blog.web
   (:require
-    [demo-blog.service  :as    service]
-    [demo-blog.util     :as    util]
-    [compojure.core     :refer [defroutes GET POST DELETE]]
-    [compojure.route    :refer [not-found]]
-    [ringlet.error      :as    error]
-    [ringlet.request    :as    req]
-    [ringlet.response   :as    res]))
+    [demo-blog.border     :as    border]
+    [demo-blog.service    :as    service]
+    [demo-blog.util       :as    util]
+    [demo-blog.validation :as    v]
+    [compojure.core       :refer [defroutes GET POST DELETE]]
+    [compojure.route      :refer [not-found]]
+    [promenade.core       :as    prom]
+    [ringlet.error        :as    error]
+    [ringlet.request      :as    req]
+    [ringlet.response     :as    res]))
+
+(def lookup-camel->kebab {"heading" :heading
+                          "content" :content
+                          "emailId" :email-id})
+
+(def camel->kebab (partial util/replace-keys lookup-camel->kebab))
+
+(def lookup-kebab->camel {:story-id "storyId"})
+
+(def kebab->camel (partial util/replace-keys lookup-kebab->camel))
 
 
-;; ---- Validations ----
-
-(defn content-type?
-  [request]
-  (get-in request [:headers "content-type"]))
-
-
-(def err-handler (-> (fn [_] (res/text-500 "Server error"))
-                   (error/tag-lookup-middleware error/default-tag-lookup)))
 
 
 ;; ---- List stories ----
@@ -34,18 +38,14 @@
   [request owner-id]
   (let [input (valid-list-stories-input? owner-id)]
     (if (contains? input :tag)
-      (err-handler input)
+      (border/err-handler input)
       (res/json-response {:status 200 :data (service/list-stories
                                               (util/clean-uuid owner-id))}))))
 
 
 ;; ---- Save story ----
 
-
-(defn validate-new-story-map
-  [owner-id {:strs [heading
-                    content
-                    email-id]}]
+(defn validate-new-story-map [owner-id {:keys [heading content email-id]}]
   (cond
     (empty? owner-id)  {:tag :bad-input :message "Empty owner-id"}
     (empty? heading)   {:tag :bad-input :message "Empty heading"}
@@ -55,21 +55,43 @@
                         :content   content
                         :email-id  email-id}))
 
+(defn content-type? [request]
+  (get-in request [:headers "content-type"]))
 
-(defn save-story
-  [request owner-id]
+(defn save-story [request owner-id]
   (if (= (content-type? request) "application/json")
     (let [payload (->> request
                     req/read-json-body
+                    camel->kebab
                     (validate-new-story-map owner-id))]
       (if (contains? payload :tag)
-        (err-handler payload)
+        (border/err-handler payload)
         (let [service-response (service/save-story (util/clean-uuid owner-id) payload)]
           (if (contains? service-response :tag)
-            (err-handler service-response)
-            (res/json-response {:status 201 :data service-response})))))
-    (err-handler {:tag :bad-input :message "Expected content-type: application/json"})))
+            (border/err-handler service-response)
+            (res/json-response {:status 201 :data (kebab->camel service-response)})))))
+    (border/err-handler {:tag :bad-input :message "Expected content-type: application/json"})))
 
+;; -------------------------------------------------------------------------------------
+
+(defn m-validate-new-story-input [owner-id {:keys [heading content email-id]}]
+  (cond
+    (empty? owner-id)  (prom/fail {:error "Empty owner-id" :source :web :type :bad-input})
+    (empty? heading)   (prom/fail {:error "Empty heading"  :source :web :type :bad-input})
+    (empty? content)   (prom/fail {:error "Empty content"  :source :web :type :bad-input})
+    (empty? email-id)  (prom/fail {:error "Empty email-id" :source :web :type :bad-input})
+    :otherwise         {:heading   heading
+                        :content   content
+                        :email-id  email-id}))
+
+(defn m-save-story [request owner-id]
+  (prom/either->> (v/m-validate-content-type request "application/json")
+      v/m-read-json-body-as-map
+      camel->kebab
+      (m-validate-new-story-input owner-id)
+      (service/m-save-story (util/clean-uuid owner-id))
+      kebab->camel
+      [border/failure->resp border/respond-201]))
 
 ;; ---- Delete story ----
 
@@ -86,7 +108,7 @@
   [request owner-id story-id]
   (let [input (valid-delete-story-input? owner-id story-id)]
     (if (contains? input :tag)
-      (err-handler input)
+      (border/err-handler input)
       (res/json-response {:status 200 :data (service/delete-story
                                               (util/clean-uuid owner-id) (util/clean-uuid story-id))}))))
 
@@ -99,7 +121,7 @@
     [owner-id :as request]          (list-stories request owner-id))
 
   (POST "/owner/:owner-id/new"
-    [owner-id :as request]          (save-story request owner-id))
+    [owner-id :as request]          (m-save-story request owner-id))
 
   (DELETE "/owner/:owner-id/delete/:story-id"
     [owner-id story-id :as request] (delete-story request owner-id story-id))

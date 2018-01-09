@@ -16,6 +16,22 @@
   (json/parse-string data))
 
 
+(defn replace-keys
+  [lookup x]
+  (let [rk (partial replace-keys lookup)]
+    (cond
+      (map? x)    (reduce-kv (fn [m k v] (assoc m (if (contains? lookup k)
+                                                    (get lookup k)
+                                                    (rk k))
+                                           (rk v)))
+                    {} x)
+      (vector? x) (mapv rk x)
+      (set? x)    (set (map rk x))
+      (list? x)   (doall (map rk x))
+      (coll? x)   (doall (map rk x))
+      :otherwise  x)))
+
+
 (defn clean-uuid
   "Generate or convert UUID into a sanitized, lower-case form."
   (^String []

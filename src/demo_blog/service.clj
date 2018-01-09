@@ -1,7 +1,8 @@
 (ns demo-blog.service
   (:require
     [demo-blog.db   :as db]
-    [demo-blog.util :as util])
+    [demo-blog.util :as util]
+    [promenade.core :as prom])
   (:import
     [java.sql SQLException]))
 
@@ -19,15 +20,12 @@
 
 ;; --- Save story ----
 
-
-(defn valid-email-id?
-  [email-id]
+(defn valid-email-id? [email-id]
   (re-matches #".+\@.+\..+" email-id))
 
 
-(defn save-story
-  [owner-id {:keys [email-id] :as new-story}]
-  (if (not (valid-email-id? email-id))
+(defn save-story [owner-id {:keys [email-id] :as new-story}]
+  (if-not (valid-email-id? email-id)
     {:tag :bad-input :message "Invalid email-id"}
     (try
       (let [story-id (util/clean-uuid)]
@@ -36,9 +34,21 @@
       (catch SQLException e
         (throw (ex-info "Unable to save new story" {}))))))
 
+;; ---------------------------------------------------------------
+
+(defn m-save-story [owner-id {:keys [email-id] :as new-story}]
+  (if-not (valid-email-id? email-id)
+    (prom/fail {:error  "Invalid email-id"
+                :source :service
+                :type   :bad-input})
+    (let [story-id (util/clean-uuid)]
+      (if (= 1 (db/save-story owner-id story-id new-story))
+        {:story-id story-id}
+        (prom/fail {:error  "Unable to save new story"
+                    :source :execution
+                    :type   :unavailable})))))
 
 ;; --- Delete story ----
-
 
 (defn delete-story
   [owner-id story-id]

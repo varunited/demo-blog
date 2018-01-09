@@ -19,15 +19,12 @@
 ;; --- List stories ---
 
 
-(defn row->story
-  [[story-id story-json]]
+(defn row->story [[story-id story-json]]
   (try
     {:story-id    (util/clean-uuid story-id)
      :story-json  (util/parse-json-str story-json)}
     (catch JsonParseException e
-      (throw (ex-info "Error deserializing JSON data from database" {:story-id story-id
-                                                                     :success? false})))))
-
+      (throw (ex-info "Error deserializing JSON data from database" {:story-id story-id})))))
 
 (a/defsql sql-list-stories-by-id
   "SELECT hex(story_id), story_json
@@ -36,9 +33,7 @@
       AND is_deleted = false"
   {:result-set-worker (partial a/fetch-rows {:row-maker (comp row->story atype/read-row)})})
 
-
-(defn list-stories-by-id
-  [owner-id]
+(defn list-stories-by-id [owner-id]
   (sql-list-stories-by-id db-spec {:owner-id owner-id}))
 
 
