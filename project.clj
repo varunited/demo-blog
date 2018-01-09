@@ -9,8 +9,10 @@
                  [clj-dbcp  "0.9.0"]
                  [asphalt   "0.6.2"]
                  [cheshire  "5.8.0"]
-                 [mysql/mysql-connector-java "6.0.2"]
-                 [ringlet "0.1.0-SNAPSHOT"]]
+                 [ringlet   "0.1.0-SNAPSHOT"]
+                 [promenade "0.3.1"]
+                 [stringer  "0.3.0"]
+                 [mysql/mysql-connector-java "6.0.2"]]
   :main         demo-blog.init
   :profiles     {:dev
                  {:main demo-blog.init/-dev-main}})
