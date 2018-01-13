@@ -9,7 +9,6 @@
 (defn failure->resp [{:keys [error
                              source
                              type] :as failure}]
-  (prn failure)
   (err-handler {:tag type :message error}))
 
 (defn respond-201 [data]

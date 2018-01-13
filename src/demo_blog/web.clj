@@ -4,6 +4,7 @@
     [demo-blog.service    :as    service]
     [demo-blog.util       :as    util]
     [demo-blog.validation :as    v]
+    [clojure.spec.alpha   :as    s]
     [compojure.core       :refer [defroutes GET POST DELETE]]
     [compojure.route      :refer [not-found]]
     [promenade.core       :as    prom]
@@ -45,15 +46,23 @@
 
 ;; ---- Save story ----
 
-(defn validate-new-story-map [owner-id {:keys [heading content email-id]}]
-  (cond
-    (empty? owner-id)  {:tag :bad-input :message "Empty owner-id"}
-    (empty? heading)   {:tag :bad-input :message "Empty heading"}
-    (empty? content)   {:tag :bad-input :message "Empty content"}
-    (empty? email-id)  {:tag :bad-input :message "Empty email-id"}
-    :otherwise         {:heading   heading
-                        :content   content
-                        :email-id  email-id}))
+(s/def ::heading  (s/and string?
+                    #(not (empty? %))
+                    #(<= (count %) 20)))
+(s/def ::content  (s/and string? #(not (empty? %))))
+(s/def ::email-id (s/and string? #(not (empty? %))))
+(s/def ::owner-id (s/and string? #(not (empty? %))))
+
+(def story-spec (s/keys :req [::heading ::content ::email-id]))
+
+(defn validate-new-story-map [owner-id {:keys [heading content email-id] :as story-map}]
+  (if (and
+        (s/valid? ::owner-id owner-id)
+        (s/valid? story-spec {::heading   heading
+                              ::content   content
+                              ::email-id  email-id}))
+    story-map
+    {:tag :bad-input :message "Bad input"}))
 
 (defn content-type? [request]
   (get-in request [:headers "content-type"]))
@@ -74,15 +83,18 @@
 
 ;; -------------------------------------------------------------------------------------
 
-(defn m-validate-new-story-input [owner-id {:keys [heading content email-id]}]
-  (cond
-    (empty? owner-id)  (prom/fail {:error "Empty owner-id" :source :web :type :bad-input})
-    (empty? heading)   (prom/fail {:error "Empty heading"  :source :web :type :bad-input})
-    (empty? content)   (prom/fail {:error "Empty content"  :source :web :type :bad-input})
-    (empty? email-id)  (prom/fail {:error "Empty email-id" :source :web :type :bad-input})
-    :otherwise         {:heading   heading
-                        :content   content
-                        :email-id  email-id}))
+(defn m-validate-new-story-input [owner-id {:keys [heading
+                                                   content
+                                                   email-id] :as story-map}]
+  (if (and
+        (s/valid? ::owner-id owner-id)
+        (s/valid? story-spec {::heading   heading
+                              ::content   content
+                              ::email-id  email-id}))
+    story-map
+    (prom/fail {:error  "Bad input"
+                :source :web
+                :type   :bad-input})))
 
 (defn m-save-story [request owner-id]
   (prom/either->> (v/m-validate-content-type request "application/json")

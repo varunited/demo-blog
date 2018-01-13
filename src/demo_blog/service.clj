@@ -32,7 +32,8 @@
         (do (db/save-story owner-id story-id new-story)
             {:story-id story-id}))
       (catch SQLException e
-        (throw (ex-info "Unable to save new story" {}))))))
+        (throw (ex-info "Unable to save new story"
+                 {:owner-id owner-id}))))))
 
 ;; ---------------------------------------------------------------
 
@@ -41,9 +42,11 @@
     (prom/fail {:error  "Invalid email-id"
                 :source :service
                 :type   :bad-input})
-    (let [story-id (util/clean-uuid)]
-      (if (= 1 (db/save-story owner-id story-id new-story))
-        {:story-id story-id}
+    (try
+      (let [story-id (util/clean-uuid)]
+        (do (db/save-story owner-id story-id new-story)
+            {:story-id story-id}))
+      (catch SQLException e
         (prom/fail {:error  "Unable to save new story"
                     :source :execution
                     :type   :unavailable})))))
