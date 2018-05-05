@@ -8,9 +8,9 @@
     [compojure.core       :refer [defroutes GET POST DELETE]]
     [compojure.route      :refer [not-found]]
     [promenade.core       :as    prom]
-    [ringlet.error        :as    error]
-    [ringlet.request      :as    req]
-    [ringlet.response     :as    res]))
+    [ringbelt.error       :as    error]
+    [ringbelt.request     :as    req]
+    [ringbelt.response    :as    res]))
 
 (def lookup-camel->kebab {"heading" :heading
                           "content" :content

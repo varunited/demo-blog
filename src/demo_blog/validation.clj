@@ -1,8 +1,8 @@
 (ns demo-blog.validation
   (:require
-    [promenade.core  :as prom]
-    [stringer.core   :as stringer]
-    [ringlet.request :as req]))
+    [promenade.core   :as prom]
+    [stringer.core    :as stringer]
+    [ringbelt.request :as req]))
 
 
 (defn m-validate-content-type [request expected-content-type]

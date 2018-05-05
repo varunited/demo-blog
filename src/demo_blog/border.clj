@@ -1,7 +1,7 @@
 (ns demo-blog.border
   (:require
-    [ringlet.error    :as error]
-    [ringlet.response :as res]))
+    [ringbelt.error    :as error]
+    [ringbelt.response :as res]))
 
 (def err-handler (-> (fn [_] (res/text-500 "Server error 123"))
                    (error/tag-lookup-middleware error/default-tag-lookup)))
